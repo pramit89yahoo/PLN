@@ -1,0 +1,43 @@
+table.customsortablegrid i.fa.fa-unsorted{
+	float: right;
+	opacity: 0.3
+}
+
+table.customsortablegrid i.fa.fa-sort-desc,table.customsortablegrid i.fa.fa-sort-asc,table.customsortablegrid i.fa.fa-sort-numeric-desc,table.customsortablegrid i.fa.fa-sort-numeric-asc,
+table.customsortablegrid i.fa.fa-sort-alpha-desc,table.customsortablegrid i.fa.fa-sort-alpha-asc{
+	float: right;
+}
+
+.table a.textnone{
+	text-decoration: none;
+}
+
+.tableParentDiv {
+    background: #fff none repeat scroll 0 0;
+    border: 1px solid #d4d4d4;
+    padding: 10px;
+}
+
+.tableParentDiv .table th {
+    border-bottom: 2px solid #d4d4d4;
+    border-top: medium none;
+    color: #909ba2;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 10px;
+    text-transform: uppercase;
+}
+
+.tableParentDiv .table td {
+    color: #4e4e4e;
+    font-size: 12px;
+    overflow: hidden;
+    padding: 5px 10px;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.tableParentDiv .table {
+    margin-bottom: 0;
+    table-layout: fixed;
+}
