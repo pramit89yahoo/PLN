@@ -100,7 +100,8 @@
 			data["cward"] = $("#cward").val() != null ? $("#cward").val().toString() : "";
 			data["cstake"] = $("#cstake").val() != null ? $("#cstake").val().toString() : "";
 			data["cbaptism"] = $("#cbaptism").val() != null ? $("#cbaptism").val().toString() : "";
-			data["clastmodifiedby"] = $("#lastmodied").val() != null ? $("#lastmodified").val().toString() : "0";
+			data["clastmodifiedby"] = Home.loginUser != null ? Home.loginUser : "0";
+			data["clastmodifiedtime"]="NOW()";
 			
 			var convertDetails={};
 			convertDetails["cname"]=$("#cname").val() != null ? $("#cname").val().toString() : "";
