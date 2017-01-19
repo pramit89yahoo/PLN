@@ -291,6 +291,12 @@ reportView.loadGrid=function(){
 }
 reportGridPaginationDiv = function(data){
 	$('.viewReport thead .th0').css("width","5%");
+	$('tr').each(function(){
+		$(this).dblclick(function(){
+			var id=$(this).children('.td0').text();
+			Convert.editConvert(id);
+		});
+	});
 };
 
 $(document).ready(function() {
