@@ -67,19 +67,19 @@
 				</div>
 				<div id="graphView">
 					<div class="form-group">
-						<div class="col-md-4" id="pieMissionary">
+						<div class="col-md-4" id="pieMissionary" onclick="reportView.showData('Missionary','Missionary');">
 						</div>
-				 		<div class="col-md-8" id="monthViseColumn">
+				 		<div class="col-md-8" id="monthViseColumn" onclick="reportView.showData('month','Month');">
 						</div>
 					</div>
 					<div class="form-group">
-				 		<div class="col-md-3" id="pieTitle">
+				 		<div class="col-md-3" id="pieTitle" onclick="reportView.showData('title','Title');">
 						</div>
-						<div class="col-md-3" id="pieWard">
+						<div class="col-md-3" id="pieWard" onclick="reportView.showData('cward','Ward');">
 						</div>
-						<div class="col-md-3" id="pieStake">
+						<div class="col-md-3" id="pieStake" onclick="reportView.showData('rstake','Stake');">
 						</div>
-						<div class="col-md-3" id="pieNationality">
+						<div class="col-md-3" id="pieNationality" onclick="reportView.showData('mnationality','Nationality');">
 						</div>
 					</div>
 				</div>
@@ -87,10 +87,10 @@
 					<div class="col-sm-12 paddingTop" id='reportGridDiv'> </div>
             		<div class="col-sm-12" id='reportGridPaginationDiv'> </div>
 				</div>
-				
 			</div>
 		</form>
 	</div>
+	
 </body>
 </html>
 <script>
@@ -99,10 +99,12 @@ reportView.yAxis = [];
 reportView.xAxis = [];
 reportView.pieData=[];
 
+
 reportView.loadReport=function(){
 	reportView.yAxis = [];
 	reportView.xAxis = [];
 	reportView.pieData=[];
+	reportView.DataResp={};
 	if(reportView.validate())
 	{
 		if($("input[name=viewType]:checked").val()=='graph')
@@ -121,9 +123,10 @@ reportView.loadReport=function(){
 			var url="${pageContext.request.contextPath}/rest/Convert/getMonthlyConverts";
 			$.post(url,{data:JSON.stringify(data)},function(responseText){
 				var resp = JSON.parse(responseText);
+				reportView.DataResp.month=responseText;
 				for(var i=0;i<resp.length;i++)
 				{
-					reportView.xAxis.push(resp[i].month);
+					reportView.xAxis.push(resp[i].entity);
 					reportView.yAxis.push(parseInt(resp[i].cnt));
 				}
 				reportView.loadColumnChart('Monthly Converts');
@@ -148,7 +151,7 @@ reportView.loadReport=function(){
 			    data: reqJson,
 			    dataType: "json",
 			    success: function(respText){
-			    	console.log(respText);
+			    	reportView.DataResp.pie=respText;
 			    	var resp = JSON.parse(respText.Missionary);
 			    	reportView.getPieData(resp);
 			    	reportView.loadPieChart('By Missionary',reportView.pieData,'#pieMissionary','Missionary');
@@ -296,6 +299,54 @@ reportGridPaginationDiv = function(data){
 			var id=$(this).children('.td0').text();
 			Convert.editConvert(id);
 		});
+	});
+};
+
+reportView.showData=function(optionvalue,optionname){
+	
+	if(optionname=="Month")
+	{
+		var tempobj=JSON.parse(reportView.DataResp.month);
+	}
+	else{
+		var tempobj=JSON.parse(reportView.DataResp.pie[optionvalue]);
+	}
+	var chartDetailsData='<table class="table table-striped">';
+		chartDetailsData+='<th>'+optionname+'</th>';
+		//chartDetailsData+='<th>Average</th>';
+		chartDetailsData+='<th>Count</th>';
+		for(var i=0;i<tempobj.length;i++)
+	    {
+			chartDetailsData +="<tr>";
+			chartDetailsData +="<td>"+tempobj[i]["entity"]+"</td>";
+			//chartDetailsData +="<td>avg</td>";
+			chartDetailsData +="<td>"+tempobj[i]["cnt"]+"</td></tr>";
+	    } 
+		chartDetailsData+='</table>';
+		
+	BootstrapDialog.show({
+		autodestroy: true,
+		closeByBackdrop: false,
+        closeByKeyboard: false,
+		size: BootstrapDialog.SIZE_MEDIUM, 
+		cssClass: 'reportdata',
+		message: $('<div></div>').html(chartDetailsData),
+		title: "<b style='font-size: 14px;'>Detail data</b>",
+		draggable : true,
+		closable : true,
+		onshown : function(){
+      		
+      	},
+      draggable : true,
+      buttons: [
+              {
+                 label: 'Close',
+                 icon: 'fa fa-times',
+                 cssClass:'btn-warning',
+                 action: function(dialog) {
+                     dialog.close();
+                 }
+             }]
 	});
 };
 

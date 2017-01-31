@@ -17,6 +17,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import general.CommonUtil;
@@ -34,7 +35,6 @@ public class Convert {
 	public String saveConvert(@FormParam("data") String data,@FormParam("convertArray") String convertArray,@DefaultValue("") @FormParam("whereObjData") String whereObjData)
 	{
 		Root root = new Root();
-		System.out.println("Save Convert"+convertArray.toString());
 		try {
 			root.getConnection();
 			JSONObject convertdata = new JSONObject(Utils.makeSafe(data));
@@ -55,7 +55,6 @@ public class Convert {
 				convertdata.put("cgender", jarray.getJSONObject(i).optString("cgender"));
 				json.put("data", convertdata);
 				responseOfSaveToTable = new JSONObject(CommonUtil.saveToTable("`convert`", json.toString(), root.con).toString());
-				System.out.println("ResponseOfconvertdataSave" + responseOfSaveToTable);
 			}
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -65,10 +64,23 @@ public class Convert {
 		}
 		return "Success";
 	}
-
+	@GET
+	@Path("exportToExcel")
+	public String exportToExcel(@DefaultValue("0")@QueryParam("excel") int excel,@Context HttpServletResponse httpResponse) throws JSONException {
+		String disposition = "attachment; fileName=Converts.xls";
+		httpResponse.setContentType("text/csv");
+		httpResponse.setHeader("Content-Disposition", disposition);
+		
+		String resp=loadGrid("{}");
+		CommonUtil obj = new CommonUtil();
+		obj.exportToExcel(new JSONObject(resp), httpResponse, "Converts", "Converts Data", "-");
+		
+		return "";
+	}
+	
 	@POST
 	@Path("loadGrid")
-	public Response loadGrid(@FormParam("data") String data) {
+	public String loadGrid(@FormParam("data") String data) {
 		Root root = new Root();
 		JSONObject response = new JSONObject();
 		JSONArray jArray = new JSONArray();
@@ -86,7 +98,7 @@ public class Convert {
 				ConvertSearchCondition=" and c.cid="+cid;
 			}
 			int start =  Utils.getValue("start", 0, gridObj);
-			int limit =  Utils.getValue("limit", 20, gridObj);
+			int limit =  Utils.getValue("limit", 1000, gridObj);
 			String orderby =  Utils.getValue("orderby", "", gridObj);
 			String ordertype =  Utils.getValue("orderType", "", gridObj);
 			if(orderby!=null && orderby.trim().length()==0){
@@ -111,18 +123,19 @@ public class Convert {
 			sortKeys.add(new JSONObject().put("sortby", "cstake").put("dataType", "string"));
 			sortKeys.add(new JSONObject().put("sortby", "cbaptism").put("dataType", "numeric"));
 			jArray = CommonUtil.getJsonArrayFromResultSet(rs, "");
-			
 			response.put("count",counts);
 			response.put("headers",new String[] {"ID","Name","Age","Gender","Missionary","Date","Ward","Stake","Baptism","Action"});
 			response.put("columns",new String[]{"cid","cname","cage","cgender","missionary","cdate","cward","cstake","cbaptism",""});
 			response.put("data",jArray);
 			response.put("sort",sortKeys);
-			return CommonUtil.getResponse(response.toString(), Status.OK);
+			return response.toString();
+			//return CommonUtil.getResponse(response.toString(), Status.OK);
 		}
 		catch (Exception ex)
 		{
 			ex.printStackTrace();
-			return CommonUtil.getResponse(response.toString(), Status.INTERNAL_SERVER_ERROR);
+			return response.toString();
+			//return CommonUtil.getResponse(response.toString(), Status.INTERNAL_SERVER_ERROR);
 		}
 		finally{
 			root.closeConnection();
@@ -230,11 +243,13 @@ public class Convert {
 			List<String> parametersList = new ArrayList<String>();
 			root.getConnection();
 			DbUtils dbutil = new DbUtils(root.con);
-			String sql= "SELECT MONTHNAME(cdate) as month,COUNT(*) as cnt,MONTH(cdate),YEAR(cdate) as monthid FROM `convert` c "
+			String sql= "SELECT MONTHNAME(cdate) as entity,COUNT(*) as cnt,MONTH(cdate),YEAR(cdate) as monthid FROM `convert` c "
 					+ "JOIN missionary m ON m.`mid`=c.`mid`"
-					+ " WHERE c.`cdate` BETWEEN ? AND ? ";
+					+ " WHERE c.`cdate` BETWEEN ? AND ? AND c.`cstatus`='active' AND (m.`mdepartdate` IS NULL OR m.`mdepartdate` BETWEEN ? AND ?)";
 			String startdate=Utils.formateStringDateToStringForMySql(jdata.getString("rstartdate"),"MM/dd/yyy","yyyy-MM-dd");
 			String enddate=Utils.formateStringDateToStringForMySql(jdata.getString("renddate"),"MM/dd/yyy","yyyy-MM-dd");
+			parametersList.add(startdate);
+			parametersList.add(enddate);
 			parametersList.add(startdate);
 			parametersList.add(enddate);
 			if(!jdata.optString("rtitle").equalsIgnoreCase(""))
@@ -313,11 +328,13 @@ public class Convert {
 		String response="";
 		String sql = "SELECT "+Groupby+" AS entity,COUNT(*) as cnt FROM `convert` c ";
 		sql += "JOIN missionary m ON c.`mid`=m.`mid`";
-		sql += "WHERE c.`cdate` BETWEEN ? AND ? AND c.`cstatus`='active' ";
+		sql += "WHERE c.`cdate` BETWEEN ? AND ? AND c.`cstatus`='active' AND (m.`mdepartdate` IS NULL OR m.`mdepartdate` BETWEEN ? AND ?)";
 		try{
 			List<String> parametersList = new ArrayList<String>();
 			String startdate=Utils.formateStringDateToStringForMySql(jdata.getString("rstartdate"),"MM/dd/yyy","yyyy-MM-dd");
 			String enddate=Utils.formateStringDateToStringForMySql(jdata.getString("renddate"),"MM/dd/yyy","yyyy-MM-dd");
+			parametersList.add(startdate);
+			parametersList.add(enddate);
 			parametersList.add(startdate);
 			parametersList.add(enddate);
 			if(!jdata.optString("rtitle").equalsIgnoreCase(""))
@@ -382,9 +399,11 @@ public class Convert {
 			DbUtils dbutil = new DbUtils(root.con);
 			String sql= "SELECT SQL_CALC_FOUND_ROWS cid,cname,cage,cgender,CONCAT(m.`mfname`,',',m.`mlname`) AS Missionary,DATE_FORMAT(cdate,'%d-%b-%Y') as cdate,cward,cstake,cbaptism,m.mtitle as title,m.mnationality as nationality FROM `convert` c "
 					+ "JOIN missionary m ON m.`mid`=c.`mid`"
-					+ " WHERE c.`cdate` BETWEEN ? AND ? ";
+					+ " WHERE c.`cdate` BETWEEN ? AND ? AND c.`cstatus`='active' AND (m.`mdepartdate` IS NULL OR m.`mdepartdate` BETWEEN ? AND ?)";
 			String startdate=Utils.formateStringDateToStringForMySql(jdata.getString("rstartdate"),"MM/dd/yyy","yyyy-MM-dd");
 			String enddate=Utils.formateStringDateToStringForMySql(jdata.getString("renddate"),"MM/dd/yyy","yyyy-MM-dd");
+			parametersList.add(startdate);
+			parametersList.add(enddate);
 			parametersList.add(startdate);
 			parametersList.add(enddate);
 			if(!jdata.optString("rtitle").equalsIgnoreCase(""))

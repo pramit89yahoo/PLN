@@ -7,10 +7,17 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.poi.hssf.usermodel.HSSFRow;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Font;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
@@ -268,4 +275,59 @@ public class CommonUtil {
 			//break;
 		}
 	 }
+	public String exportToExcel(JSONObject response,HttpServletResponse httpResponse,String fileName,String worksheetName,String ifNotFound)
+	{
+		// How to call
+		//		 GeneralUtil obj=new GeneralUtil();
+		//        obj.exportToExcel(response, httpResponse, "Attendees Report","AttendeeList","--");
+		try
+		{
+		JSONArray headers=response.getJSONArray("headers");
+        
+        HSSFWorkbook workbook = new HSSFWorkbook();
+        HSSFSheet sheet = workbook.createSheet(worksheetName);  
+
+        //header row styling...
+        HSSFRow rowhead = sheet.createRow((short)0);
+        Font font = workbook.createFont();
+        CellStyle style = workbook.createCellStyle();
+        font.setBoldweight(Font.BOLDWEIGHT_BOLD);
+        
+        style.setFont(font);
+        rowhead.setRowStyle(style);
+        
+        sheet.createFreezePane(0, 1);
+        for(int i=0;i<headers.length();i++)
+        {
+        	//System.out.println(i+"   "+headers.get(i));
+        	rowhead.createCell(i).setCellValue(Utils.getParamStringS(headers.get(i).toString(),ifNotFound));
+        }
+        JSONArray data=response.getJSONArray("data");
+        int dataLen = data.length();
+        JSONArray keys=response.getJSONArray("columns");
+        //System.out.println("data-->"+data);
+			for (int i = 0; i < dataLen; i++) {
+				JSONObject record = data.getJSONObject(i);
+				//System.out.println("record-->" + record);
+				HSSFRow row = sheet.createRow((short) (i+1));
+				for (int j = 0; j < keys.length(); j++) {
+					//System.out.println("key-->" + keys.getString(j));
+					String keyname = keys.getString(j);
+					if (record.has(keyname)) {
+						row.createCell(j).setCellValue(Utils.getParamStringS(record.get(keyname).toString(), ifNotFound));
+					}
+				}
+			}
+      	 httpResponse.setContentType("application/vnd.ms-excel");
+		 httpResponse.setHeader("Content-Disposition", "attachment; filename="+fileName+".xls");
+
+		 workbook.write(httpResponse.getOutputStream());
+		 workbook.close();
+		 httpResponse.getOutputStream().close();
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return "";
+	}
 }

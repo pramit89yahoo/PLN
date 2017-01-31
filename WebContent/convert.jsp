@@ -13,7 +13,8 @@
 				<button type="button" onclick="Convert.loadGrid();" class="btn btn-primary" style="margin-right: 5px;">
 			            	<i class="fa fa-search"></i> Search  	</button>
 			</div>
-			<button class="btn btn-success pull-right" onclick="Convert.addConvert();">Add Converts</button>
+			<button class="btn btn-success  pull-right" onclick="Convert.addConvert();" style="margin-right: 5px;">Add Converts</button>
+			<button class="btn btn-info  pull-right" onclick="Convert.exportToExcel();" style="margin-right: 5px;">Export to Excel</button>
 		</div>
 		<div class="TaskRow">
             <div class="col-sm-12 paddingTop" id='convertGridDiv'> </div>
@@ -153,7 +154,9 @@ Convert.deleteConvert=function(cid){
     	 cssClass: "DeleteConvert"      	
  	});
 }
-
+Convert.exportToExcel=function(){
+	window.location.href="${pageContext.request.contextPath}/rest/Convert/exportToExcel";
+};
 
 
 $(document).ready(function(){
