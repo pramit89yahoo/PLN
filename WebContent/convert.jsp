@@ -5,7 +5,16 @@
 </section>
 <section class="content convertContent">
 	<div class="col-md-12">
-		<button class="btn btn-success pull-right" onclick="Convert.addConvert();">Add Converts</button>
+		<div class="Row">
+			<div class="col-md-4">
+				<input id="cConvertSearch" type="text" class="form-control " placeholder="Search Convert"></input>
+			</div>
+			<div class="col-md-2">
+				<button type="button" onclick="Convert.loadGrid();" class="btn btn-primary" style="margin-right: 5px;">
+			            	<i class="fa fa-search"></i> Search  	</button>
+			</div>
+			<button class="btn btn-success pull-right" onclick="Convert.addConvert();">Add Converts</button>
+		</div>
 		<div class="TaskRow">
             <div class="col-sm-12 paddingTop" id='convertGridDiv'> </div>
             <div class="col-sm-12" id='convertGridPaginationDiv'> </div>
@@ -52,8 +61,12 @@ Convert.addConvert=function(){
 };
 
 Convert.loadGrid=function(){
-	console.log('in load grid');
 	var reqJson = {};
+	if($("#cConvertSearch").val()!= '' && Convert.cid != 0)
+	{
+		reqJson.cid= Convert.cid;
+	}
+	console.log('in load grid');
 	var url = "${pageContext.request.contextPath}/rest/Convert/loadGrid?m="+Math.random();
 	pagersss = new SortableGrid('convertGridDiv', url, reqJson, 100,'pagersss','convertGridPaginationDiv',true);
 	pagersss.showPage(1);
@@ -125,7 +138,7 @@ Convert.deleteConvert=function(cid){
     	 	label : '<i class="fa fa-check"></i> Yes',
     	 	action : function(dialogRef){
     	 		url = "${pageContext.request.contextPath}/rest/Convert/deleteConvert";
-    			$.get(url,{'cid':cid,loginuser:0},function(response){
+    			$.get(url,{'cid':cid,loginuser:Home.loginUser},function(response){
     				if(response=="success")
     				{
     					dialogRef.close();
@@ -144,7 +157,15 @@ Convert.deleteConvert=function(cid){
 
 
 $(document).ready(function(){
-	Convert.loadGrid();		
+	Convert.loadGrid();	
+	$("#cConvertSearch").autocomplete({
+        source: "${pageContext.request.contextPath}/rest/Convert/getConvertByName?limit=10&m="+Math.random(),
+        minLength: 2,
+        select: function(event, ui) {
+        	$("#cConvertSearch").val(ui.item.label);
+        	Convert.cid = ui.item.id;
+        }
+    });
 });
 
 </script>

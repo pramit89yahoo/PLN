@@ -42,7 +42,7 @@ public class Convert {
 			JSONArray jarray=new JSONArray(Utils.makeSafe(convertArray));
 			JSONObject json = new JSONObject();
 			JSONObject outerwhereObj = new JSONObject();
-			convertdata.put("cdate",Utils.formateStringDateToStringForMySql(convertdata.getString("cdate"),"MM/dd/yyy","yyyy-MM-dd"));
+			convertdata.put("cdate",Utils.formateStringDateToStringForMySql(convertdata.getString("cdate"),"dd-MMM-yyyy","yyyy-MM-dd"));
 			
 			if (whereObjData.length() > 2) {
 				outerwhereObj = new JSONObject(Utils.makeSafe(whereObjData));
@@ -72,6 +72,7 @@ public class Convert {
 		Root root = new Root();
 		JSONObject response = new JSONObject();
 		JSONArray jArray = new JSONArray();
+		String ConvertSearchCondition="";
 		try{
 			JSONObject jsonObject = new JSONObject();
 			if (data != null) {
@@ -79,15 +80,38 @@ public class Convert {
 				jsonObject = new JSONObject(data);
 			}
 			JSONObject gridObj = jsonObject.optJSONObject("gridCustomParams");
+			int cid = jsonObject.optInt("cid");
+			if(cid!=0)
+			{
+				ConvertSearchCondition=" and c.cid="+cid;
+			}
 			int start =  Utils.getValue("start", 0, gridObj);
 			int limit =  Utils.getValue("limit", 20, gridObj);
+			String orderby =  Utils.getValue("orderby", "", gridObj);
+			String ordertype =  Utils.getValue("orderType", "", gridObj);
+			if(orderby!=null && orderby.trim().length()==0){
+				orderby="cid";ordertype="desc";
+			}
 			root.getConnection();
 			DbUtils dUtil=new DbUtils(root.con);
-			ResultSet rs = dUtil.selectFromDatabase("SELECT SQL_CALC_FOUND_ROWS cid,cname,cage,cgender,CONCAT(m.`mfname`,',',m.`mlname`) AS Missionary,DATE_FORMAT(cdate,'%m/%d/%Y') as cdate,cward,cstake,cbaptism"
-					+ " FROM `convert` c LEFT JOIN `missionary` m ON m.`mid`=c.`mid` WHERE c.`cstatus`=? order by cid desc limit "+start+","+limit,"active");
+			ResultSet rs = dUtil.selectFromDatabase("SELECT SQL_CALC_FOUND_ROWS cid,cname,cage,cgender,CONCAT(m.`mfname`,',',m.`mlname`) AS Missionary,DATE_FORMAT(cdate,'%d-%b-%Y') as cdate,cward,cstake,cbaptism"
+					+ " FROM `convert` c "
+					+ "LEFT JOIN `missionary` m ON m.`mid`=c.`mid` "
+					+ "WHERE c.`cstatus`=? "+ConvertSearchCondition
+					+ " order by "+orderby+" "+ordertype+" limit "+start+","+limit,"active");
 			int counts = dUtil.getIntFromDatabase("select count(*) from `convert` where cstatus=?", 0, "active");
 			List<Object> sortKeys = new ArrayList<Object>();
+			sortKeys.add(new JSONObject().put("sortby", "cid").put("dataType", "numeric"));
+			sortKeys.add(new JSONObject().put("sortby", "cname").put("dataType", "string"));
+			sortKeys.add(new JSONObject().put("sortby", "cage").put("dataType", "numeric"));
+			sortKeys.add(new JSONObject().put("sortby", "cgender").put("dataType", "string"));
+			sortKeys.add(new JSONObject().put("sortby", "missionary").put("dataType", "string"));
+			sortKeys.add(new JSONObject().put("sortby", "cdate").put("dataType", "string"));
+			sortKeys.add(new JSONObject().put("sortby", "cward").put("dataType", "string"));
+			sortKeys.add(new JSONObject().put("sortby", "cstake").put("dataType", "string"));
+			sortKeys.add(new JSONObject().put("sortby", "cbaptism").put("dataType", "numeric"));
 			jArray = CommonUtil.getJsonArrayFromResultSet(rs, "");
+			
 			response.put("count",counts);
 			response.put("headers",new String[] {"ID","Name","Age","Gender","Missionary","Date","Ward","Stake","Baptism","Action"});
 			response.put("columns",new String[]{"cid","cname","cage","cgender","missionary","cdate","cward","cstake","cbaptism",""});
@@ -136,7 +160,7 @@ public class Convert {
 		try{
 			root.getConnection();
 			DbUtils dbutil = new DbUtils(root.con);
-			String query="SELECT cid,cname,cage,cgender,c.mid,concat(m.mlname,',',m.mfname) as mname,DATE_FORMAT(cdate,'%m/%d/%Y') AS cdate,cward,cstake,cbaptism "
+			String query="SELECT cid,cname,cage,cgender,c.mid,concat(m.mlname,',',m.mfname) as mname,DATE_FORMAT(cdate,'%d-%b-%Y') AS cdate,cward,cstake,cbaptism "
 					+ "FROM `convert` c LEFT JOIN `missionary` m ON m.`mid`=c.mid WHERE c.cid=?";
 			ResultSet rs=dbutil.selectFromDatabase(query, cid);
 			data=CommonUtil.getJsonObjectFromResultSet(rs, "");
@@ -347,11 +371,16 @@ public class Convert {
 			JSONObject gridObj = jsonObject.optJSONObject("gridCustomParams");
 			int start =  Utils.getValue("start", 0, gridObj);
 			int limit =  Utils.getValue("limit", 20, gridObj);
+			String orderby =  Utils.getValue("orderby", "", gridObj);
+			String ordertype =  Utils.getValue("orderType", "", gridObj);
+			if(orderby!=null && orderby.trim().length()==0){
+				orderby="c.cid";ordertype="desc";
+			}
 			JSONObject jdata = new JSONObject(Utils.makeSafe(data));
 			List<String> parametersList = new ArrayList<String>();
 			root.getConnection();
 			DbUtils dbutil = new DbUtils(root.con);
-			String sql= "SELECT SQL_CALC_FOUND_ROWS cid,cname,cage,cgender,CONCAT(m.`mfname`,',',m.`mlname`) AS Missionary,DATE_FORMAT(cdate,'%m/%d/%Y') as cdate,cward,cstake,cbaptism,m.mtitle as title,m.mnationality as nationality FROM `convert` c "
+			String sql= "SELECT SQL_CALC_FOUND_ROWS cid,cname,cage,cgender,CONCAT(m.`mfname`,',',m.`mlname`) AS Missionary,DATE_FORMAT(cdate,'%d-%b-%Y') as cdate,cward,cstake,cbaptism,m.mtitle as title,m.mnationality as nationality FROM `convert` c "
 					+ "JOIN missionary m ON m.`mid`=c.`mid`"
 					+ " WHERE c.`cdate` BETWEEN ? AND ? ";
 			String startdate=Utils.formateStringDateToStringForMySql(jdata.getString("rstartdate"),"MM/dd/yyy","yyyy-MM-dd");
@@ -383,10 +412,20 @@ public class Convert {
 				sql+=" and c.mid=? ";
 				parametersList.add(jdata.getString("rmissionary"));
 			}
-			sql+= "and c.cstatus='active'";
+			sql+= " and c.cstatus='active'";
+			sql+= " order by "+orderby+" "+ordertype;
+			sql+=" limit "+start +","+limit;
 			ResultSet rs=dbutil.selectFromDatabase(sql,parametersList.toArray());
 			int counts=dbutil.getTotalCount();
 			List<Object> sortKeys = new ArrayList<Object>();
+			sortKeys.add(new JSONObject().put("sortby", "cid").put("dataType", "numeric"));
+			sortKeys.add(new JSONObject().put("sortby", "cname").put("dataType", "string"));
+			sortKeys.add(new JSONObject().put("sortby", "c.cdate").put("dataType", "string"));
+			sortKeys.add(new JSONObject().put("sortby", "missionary").put("dataType", "string"));
+			sortKeys.add(new JSONObject().put("sortby", "nationality").put("dataType", "string"));
+			sortKeys.add(new JSONObject().put("sortby", "cward").put("dataType", "string"));
+			sortKeys.add(new JSONObject().put("sortby", "cstake").put("dataType", "string"));
+			
 			jArray = CommonUtil.getJsonArrayFromResultSet(rs, "");
 			response.put("count",counts);
 			response.put("headers",new String[] {"ID","Convert Name","Date","Missionary","Title","Nationality","Ward","Stake"});
@@ -404,5 +443,29 @@ public class Convert {
 		finally{
         	root.closeConnection();
         }
+	}
+	
+	@GET
+	@Path("getConvertByName")
+	public String getConvertByName(@QueryParam("term") String term,@QueryParam("limit") int limit) throws Exception{
+		String response = "";
+		Root root = new Root();
+		try{
+			root.getConnection();
+			DbUtils dbutil = new DbUtils(root.con);
+			String sql= "select cid as id , cname as label "
+					+ "from `convert` where (cname like ?) and cstatus ='active' order by cname limit ?";
+			term ="%"+term+"%";
+			ResultSet rs=dbutil.selectFromDatabase(sql, term,limit);
+			response=CommonUtil.getJsonArrayFromResultSet(rs, "").toString();
+		}
+		catch(Exception ex)
+		{
+			ex.printStackTrace();
+		}
+		finally{
+        	root.closeConnection();
+        }
+		return response;
 	}
 }

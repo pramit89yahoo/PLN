@@ -46,10 +46,12 @@ public class Missionary {
 				outerwhereObj = new JSONObject(Utils.makeSafe(whereObjData));
 				json.put("where", outerwhereObj);
 			}
-			missionarydata.put("marrivaldate",Utils.formateStringDateToStringForMySql(missionarydata.getString("marrivaldate"),"MM/dd/yyy","yyyy-MM-dd"));
+			System.out.println(missionarydata);
+			missionarydata.put("marrivaldate",Utils.formateStringDateToStringForMySql(missionarydata.getString("marrivaldate"),"dd-MMM-yyyy","yyyy-MM-dd"));
+			missionarydata.put("mdepartdate",Utils.formateStringDateToStringForMySql(missionarydata.getString("mdepartdate"),"dd-MMM-yyyy","yyyy-MM-dd"));
+			System.out.println(missionarydata);
 			json.put("data", missionarydata);
-			responseOfSaveToTable = new JSONObject(
-					CommonUtil.saveToTable("missionary", json.toString(), root.con).toString());
+			responseOfSaveToTable = new JSONObject(CommonUtil.saveToTable("missionary", json.toString(), root.con).toString());
 			System.out.println("ResponseOfMissionarySave" + responseOfSaveToTable);
 
 		} catch (Exception ex) {
@@ -68,31 +70,52 @@ public class Missionary {
 		JSONObject response = new JSONObject();
 		JSONArray jArray = new JSONArray();
 		try{
+			
 			JSONObject jsonObject = new JSONObject();
 			if (data != null) {
 				jsonObject = null;
 				jsonObject = new JSONObject(data);
 			}
+			int cmid = jsonObject.optInt("cmid");
 			JSONObject gridObj = jsonObject.optJSONObject("gridCustomParams");
 			int start =  Utils.getValue("start", 0, gridObj);
 			int limit =  Utils.getValue("limit", 20, gridObj);
+			String orderby =  Utils.getValue("orderby", "", gridObj);
+			String ordertype =  Utils.getValue("orderType", "", gridObj);
+			if(orderby!=null && orderby.trim().length()==0){
+				orderby="m.mid";ordertype="desc";
+			}
 			
 			root.getConnection();
 			DbUtils dUtil=new DbUtils(root.con);
-			ResultSet rs = dUtil.selectFromDatabase("select SQL_CALC_FOUND_ROWS mid,mtitle,mfname,mlname,marrivaldate,mnationality from `missionary` m where m.mstatus=? order by mid desc limit "+start+","+limit,"active");
+			ResultSet rs=null;
+			if(cmid != 0)
+			{
+				 rs = dUtil.selectFromDatabase("select SQL_CALC_FOUND_ROWS mid,mtitle,mfname,mlname,DATE_FORMAT(marrivaldate,'%d-%b-%Y') AS marrivaldate,"
+				 		+ "DATE_FORMAT(mdepartdate,'%d-%b-%Y') AS mdepartdate,mnationality "
+				 		+ "from `missionary` m where m.mstatus=? and m.mid=? "
+				 		+ "order by "+orderby+" "+ordertype+" limit "+start+","+limit,"active",cmid);
+			}
+			else{
+				rs = dUtil.selectFromDatabase("select SQL_CALC_FOUND_ROWS mid,mtitle,mfname,mlname,DATE_FORMAT(marrivaldate,'%d-%b-%Y') AS marrivaldate,"
+						+ "DATE_FORMAT(mdepartdate,'%d-%b-%Y') AS mdepartdate,mnationality "
+						+ "from `missionary` m where m.mstatus=? "
+						+ " order by "+orderby+" "+ordertype+" limit "+start+","+limit,"active");
+			}
 			int counts = dUtil.getIntFromDatabase("select count(*) from `missionary` m where m.mstatus=?", 0, "active");
 			List<Object> sortKeys = new ArrayList<Object>();
-			sortKeys.add("");
-			sortKeys.add("");
-			sortKeys.add("");
-			sortKeys.add("");
-			sortKeys.add("");
-			sortKeys.add("");
+			sortKeys.add(new JSONObject().put("sortby", "mid").put("dataType", "numeric"));
+			sortKeys.add(new JSONObject().put("sortby", "mtitle").put("dataType", "string"));
+			sortKeys.add(new JSONObject().put("sortby", "mfname").put("dataType", "string"));
+			sortKeys.add(new JSONObject().put("sortby", "mlname").put("dataType", "string"));
+			sortKeys.add(new JSONObject().put("sortby", "marrivaldate").put("dataType", "string"));
+			sortKeys.add(new JSONObject().put("sortby", "mdepartdate").put("dataType", "string"));
+			sortKeys.add(new JSONObject().put("sortby", "mnationality").put("dataType", "string"));
 			jArray = CommonUtil.getJsonArrayFromResultSet(rs, "");
 			System.out.println(counts);
 			response.put("count",counts);
-			response.put("headers",new String[] {"ID","Title","First Name","Last Name","Arrival Date","Nationality","Action"});
-			response.put("columns",new String[]{"mid","mtitle","mfname","mlname","marrivaldate","mnationality",""});
+			response.put("headers",new String[] {"ID","Title","First Name","Last Name","Arrival Date","Departure Date","Nationality","Action"});
+			response.put("columns",new String[]{"mid","mtitle","mfname","mlname","marrivaldate","mdepartdate","mnationality",""});
 			response.put("data",jArray);
 			response.put("sort",sortKeys);
 			return CommonUtil.getResponse(response.toString(), Status.OK);
@@ -138,7 +161,7 @@ public class Missionary {
 		try{
 			root.getConnection();
 			DbUtils dbutil = new DbUtils(root.con);
-			String query="select mid,mtitle,mfname,mlname,DATE_FORMAT(marrivaldate,'%m/%d/%Y') AS marrivaldate,mnationality from missionary m where m.mid=?";
+			String query="select mid,mtitle,mfname,mlname,DATE_FORMAT(marrivaldate,'%d-%b-%Y') AS marrivaldate,DATE_FORMAT(mdepartdate,'%d-%b-%Y') AS mdepartdate,mnationality from missionary m where m.mid=?";
 			ResultSet rs=dbutil.selectFromDatabase(query, mid);
 			data=CommonUtil.getJsonObjectFromResultSet(rs, "");
 		}

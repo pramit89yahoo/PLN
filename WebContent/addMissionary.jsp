@@ -34,7 +34,13 @@
 				<div class="form-group">
 					<label class="col-md-5 control-label">ArrivalDate</label>
 					<div class="col-md-7">
-						<input id="marrivaldate" type="text" class="form-control requiredfield" readonly placeholder="Date"> </input>
+						<input id="marrivaldate" type="text" class="form-control requiredfield" readonly placeholder="Arrival Date"> </input>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="col-md-5 control-label">departed Date</label>
+					<div class="col-md-7">
+						<input id="mdepartdate" type="text" class="form-control requiredfield" readonly placeholder="Departed Date"> </input>
 					</div>
 				</div>
 				<div class="form-group">
@@ -71,6 +77,7 @@
 			data["mlname"] = $("#mlname").val() != null ? $("#mlname").val().toString() : "";
 			data["marrivaldate"] = $("#marrivaldate").val() != null ? $("#marrivaldate").val().toString() : "";
 			data["mnationality"] = $("#mnationality").val() != null ? $("#mnationality").val().toString() : "";
+			data["mdepartdate"] = $("#mdepartdate").val() != null ? $("#mdepartdate").val().toString() : "";
 			data["mlastmodifiedby"]=Home.loginUser != null ? Home.loginUser : "0";
 			data["mlastmodifiedtime"]="NOW()";
 			var url="${pageContext.request.contextPath}/rest/Missionary/saveMissionary";
@@ -124,6 +131,7 @@
         	$("#mfname").val(resp["mfname"]);
         	$("#mlname").val(resp["mlname"]);
         	$("#marrivaldate").val(resp["marrivaldate"]);
+        	$("#mdepartdate").val(resp["mdepartdate"]);
         	$("#mnationality").val(resp["mnationality"]);
 		});
 	}
@@ -131,7 +139,11 @@
 		$(".addMissionaryForm #errorDetails").css("display", "none");
 
 		$(".addMissionary #marrivaldate").datetimepicker({
-			format: 'MM/DD/YYYY',
+			format: 'DD-MMM-YYYY',
+			pickTime : false
+		});
+		$(".addMissionary #mdepartdate").datetimepicker({
+			format: 'DD-MMM-YYYY',
 			pickTime : false
 		});
 	});

@@ -156,7 +156,7 @@
 
 	$(document).ready(function(id){
 		$(".editConvert #errorDetails").css("display", "none");
-		$("#cdate").datetimepicker({pickTime:false,format: 'MM/DD/YYYY'});
+		$("#cdate").datetimepicker({pickTime:false,format: 'DD-MMM-YYYY'});
 		$("#cmissionary").autocomplete({
 	        source: "${pageContext.request.contextPath}/rest/Missionary/getMissionary?limit=10&m="+Math.random(),
 	        minLength: 2,

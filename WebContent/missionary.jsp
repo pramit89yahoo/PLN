@@ -1,3 +1,4 @@
+<meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
 <section class="content-header">
 	<h1>
 		Missionary<small>Add/Edit/Delete</small>
@@ -5,11 +6,17 @@
 </section>
 <section class="content missionaryContent">
 	<div class=" col-md-12">
-	<div class="row">
-		<button class="btn btn-success pull-right"
-			onclick="Missionary.addMissionary();">Add Missionary</button>
-	</div>		
-			<div class="TaskRow">
+		<div class="Row">
+			<div class="col-md-4">
+				<input id="mMissionarySearch" type="text" class="form-control " placeholder="Search Missionary"></input>
+			</div>
+			<div class="col-md-2">
+				<button type="button" onclick="Missionary.loadGrid();" class="btn btn-primary" style="margin-right: 5px;">
+			            	<i class="fa fa-search"></i> Search  	</button>
+			</div>
+			<button class="btn btn-success pull-right" onclick="Missionary.addMissionary();">Add Missionary</button>
+		</div>
+		<div class="TaskRow">
             <div class="col-sm-12 paddingTop" id='misGridDiv'> </div>
             <div class="col-sm-12" id='misGridPaginationDiv'> </div>
 		</div>
@@ -61,10 +68,15 @@
 	
 	
 	Missionary.loadGrid=function(){
-		console.log('in load grid');
 		var reqJson = {};
+		if($("#mMissionarySearch").val()!= '' && Missionary.cmid != 0)
+		{
+			reqJson.cmid= Missionary.cmid;
+		}
+		console.log('in load grid');
+		
 		var url = "${pageContext.request.contextPath}/rest/Missionary/loadGrid?m="+Math.random();
-		pagersss = new SortableGrid('misGridDiv', url, reqJson, 10,'pagersss','misGridPaginationDiv',true);
+		pagersss = new SortableGrid('misGridDiv', url, reqJson, 1000,'pagersss','misGridPaginationDiv',true);
 		pagersss.showPage(1);
 		
 	}
@@ -74,7 +86,8 @@
 		$('.missionaryContent thead .th2').css("width","15%");
 		$('.missionaryContent thead .th3').css("width","15%");
 		$('.missionaryContent thead .th6').css("width","10%");
-	 	$('.td6').each(function(){
+		$('.missionaryContent thead .th7').css("width","8%");
+	 	$('.td7').each(function(){
 	 		var id=$(this).parent('tr').children('.td0').text();
 			$(this).empty();
 			$(this).append('<i class="fa fa-pencil" style="padding:8px;color:blue" onclick="Missionary.editMissionary('+id+')">  </i>');
@@ -98,7 +111,7 @@
         	 	label : '<i class="fa fa-check"></i> Yes',
         	 	action : function(dialogRef){
         	 		url = "${pageContext.request.contextPath}/rest/Missionary/deleteMissionary";
-        			$.get(url,{'mid':mid,loginuser:1},function(response){
+        			$.get(url,{'mid':mid,loginuser:Home.loginUser},function(response){
         				if(response=="success")
         				{
         					dialogRef.close();
@@ -150,8 +163,15 @@
 		});
 		
 	}
-	
 	$(document).ready(function(){
 		Missionary.loadGrid();		
+		$("#mMissionarySearch").autocomplete({
+	        source: "${pageContext.request.contextPath}/rest/Missionary/getMissionary?limit=10&m="+Math.random(),
+	        minLength: 2,
+	        select: function(event, ui) {
+	        	$("#mMissionarySearch").val(ui.item.label);
+	        	Missionary.cmid = ui.item.id;
+	        }
+	    });
 	});
 </script>

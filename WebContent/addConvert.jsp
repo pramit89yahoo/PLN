@@ -190,7 +190,7 @@ addConvert.deleteRow=function(rowid)
 $(document).ready(function(id){
 	$(".addConvert #errorDetails").css("display", "none");
 	addConvert.rowid=2;
-	$("#cdate").datetimepicker({pickTime:false,format: 'MM/DD/YYYY'});
+	$("#cdate").datetimepicker({pickTime:false,format: 'DD-MMM-YYYY'});
 	$("#cmissionary").autocomplete({
         source: "${pageContext.request.contextPath}/rest/Missionary/getMissionary?limit=10&m="+Math.random(),
         minLength: 2,
