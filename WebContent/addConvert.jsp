@@ -3,6 +3,11 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
+<style>
+.token-input-dropdown-facebook {
+	z-index: 1200 !important;
+}
+</style>
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
 <title>Insert title here</title>
 </head>
@@ -14,26 +19,28 @@
 				<div class="box-body">
 					<div class="form-group">
 						<label class="col-md-2 control-label">Missionary</label>
-						<div class="col-md-2">
+						<div class="col-md-10">
 							<input id="cmissionary" type="text" class="form-control requiredfield"
 								placeholder="Missionary name"></input>
 						</div>
-						<label class="col-md-2 control-label">Date Time</label>
+						
+						
+					</div>
+					<div class="form-group">
+					<label class="col-md-2 control-label">Date Time</label>
 						<div class="col-md-2 ">
 							<input id="cdate" class="form-control requiredfield" readonly type="text" placeholder="click to select" ></input>
 						</div>
-					</div>
-					<div class="form-group">
-						<label class="col-md-2 control-label">Ward</label>
+						<label class="col-md-1 control-label">Ward</label>
 						<div class="col-md-2 ">
 							<input id="cward" class="form-control requiredfield" type="text" placeholder="Ward" ></input>
 						</div>
-						<label class="col-md-2 control-label">Stake</label>
+						<label class="col-md-1 control-label">Stake</label>
 						<div class="col-md-2 ">
 							<input id="cstake" class="form-control requiredfield" type="text" placeholder="Stake" ></input>
 						</div>
-						<label class="col-md-2 control-label">Baptism</label>
-						<div class="col-md-2 ">
+						<label class="col-md-1 control-label">Baptism</label>
+						<div class="col-md-1 ">
 							<input id="cbaptism" class="form-control requiredfield" type="text" placeholder="Bapism" value="1"></input>
 						</div>
 					</div>
@@ -95,7 +102,7 @@ addConvert.savedata=function(dialog){
 		var data = {};
 		var convertArray=[];
 		
-		data["mid"] = addConvert.cmid != null ? addConvert.cmid.toString() : "0";
+		missionaryId = $('#cmissionary').val() != null ? $('#cmissionary').val() : "0";
 		data["cdate"] = $("#cdate").val() != null ? $("#cdate").val().toString() : "";
 		data["cward"] = $("#cward").val() != null ? $("#cward").val().toString() : "";
 		data["cstake"] = $("#cstake").val() != null ? $("#cstake").val().toString() : "";
@@ -112,7 +119,7 @@ addConvert.savedata=function(dialog){
 		
 		
 		var url="${pageContext.request.contextPath}/rest/Convert/saveConvert";
-		$.post(url,{data:JSON.stringify(data),convertArray:JSON.stringify(convertArray)},function(responseText){
+		$.post(url,{data:JSON.stringify(data),convertArray:JSON.stringify(convertArray),missionaryId},function(responseText){
 			if(responseText=="Success")
 			{
 				alert('convert saved.');
@@ -143,12 +150,6 @@ addConvert.validate=function(){
 				$(this).css("border-color", "");
 			}
 		});
-		
-		if(addConvert.cmid==0 || addConvert.cmid==undefined)
-		{
-			valid = 1;
-			$('#cmissionary').css("border-color", "red");
-		}
 		if (valid == 1) {
 			return false;
 		} else {
@@ -191,14 +192,6 @@ $(document).ready(function(id){
 	$(".addConvert #errorDetails").css("display", "none");
 	addConvert.rowid=2;
 	$("#cdate").datetimepicker({pickTime:false,format: 'DD-MMM-YYYY'});
-	$("#cmissionary").autocomplete({
-        source: "${pageContext.request.contextPath}/rest/Missionary/getMissionary?limit=10&m="+Math.random(),
-        minLength: 2,
-        select: function(event, ui) {
-        	$("#cmissionary").val(ui.item.label);
-        	addConvert.cmid = ui.item.id;
-        }
-    });
 	$("#cward").autocomplete({
         source: "${pageContext.request.contextPath}/rest/Convert/getWard?limit=10&m="+Math.random(),
         minLength: 1,
@@ -213,6 +206,19 @@ $(document).ready(function(id){
         	$("#cstake").val(ui.item.label);
         }
     });
+	$("#cmissionary").tokenInput("${pageContext.request.contextPath}/rest/Missionary/getMissionary?limit=10", {
+      	preventDuplicates: true,
+		theme: "facebook",
+		hintText:"Select Missionary",
+		queryParam : "term",
+		propertyToSearch : "label",
+      	onAdd: function(item) {
+      	},
+      	onDelete: function(item) {
+		},
+		onReady : function(item) {
+		}
+		});
 });
 
 </script>

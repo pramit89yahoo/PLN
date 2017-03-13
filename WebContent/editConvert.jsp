@@ -4,6 +4,11 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<style>
+.token-input-dropdown-facebook {
+	z-index: 1200 !important;
+}
+</style>
 </head>
 <body>
 	<div class="editConvert col-md-12 ui-front">
@@ -95,7 +100,7 @@
 			var convertArray=[];
 			var whereObjData = {};
 			
-			data["mid"] = editConvert.cmid != null ? editConvert.cmid.toString() : "0";
+			//data["mid"] = editConvert.cmid != null ? editConvert.cmid.toString() : "0";
 			data["cdate"] = $("#cdate").val() != null ? $("#cdate").val().toString() : "";
 			data["cward"] = $("#cward").val() != null ? $("#cward").val().toString() : "";
 			data["cstake"] = $("#cstake").val() != null ? $("#cstake").val().toString() : "";
@@ -142,11 +147,6 @@
 					$(this).css("border-color", "");
 				}
 			});
-		if(editConvert.cmid==0 || editConvert.cmid==undefined)
-		{
-			valid = 1;
-			$('#cmissionary').css("border-color", "red");
-		}
 		if (valid == 1) {
 			return false;
 		} else {
@@ -157,14 +157,14 @@
 	$(document).ready(function(id){
 		$(".editConvert #errorDetails").css("display", "none");
 		$("#cdate").datetimepicker({pickTime:false,format: 'DD-MMM-YYYY'});
-		$("#cmissionary").autocomplete({
+		/* $("#cmissionary").autocomplete({
 	        source: "${pageContext.request.contextPath}/rest/Missionary/getMissionary?limit=10&m="+Math.random(),
 	        minLength: 2,
 	        select: function(event, ui) {
 	        	$("#cmissionary").val(ui.item.label);
 	        	editConvert.cmid = ui.item.id;
 	        }
-	    });
+	    }); */
 		$("#cward").autocomplete({
 	        source: "${pageContext.request.contextPath}/rest/Convert/getWard?limit=10&m="+Math.random(),
 	        minLength: 1,
@@ -179,6 +179,34 @@
 	        	$("#cstake").val(ui.item.label);
 	        }
 	    });
+		$("#cmissionary").tokenInput("${pageContext.request.contextPath}/rest/Missionary/getMissionary?limit=10", {
+	      	preventDuplicates: true,
+			theme: "facebook",
+			hintText:"Select Missionary",
+			queryParam : "term",
+			propertyToSearch : "label",
+			/* prePopulate : [{id: 3, label: "test"}, {id: 5, label: "awesome"}], */
+	      	onAdd: function(item) {
+	      		var url="${pageContext.request.contextPath}/rest/Convert/saveConvertMissionary";
+	      		$.post(url,{cid:editConvert.cid,mid:item.id,lastmodifiedby:Home.loginUser},function(responseText){
+	    			if(responseText!="success")
+	    			{
+	    				alert('An error occurred');
+	    			}
+	    		});
+	      	},
+	      	onDelete: function(item) {
+	      		var url="${pageContext.request.contextPath}/rest/Convert/saveConvertMissionary";
+	      		$.post(url,{cid:editConvert.cid,mid:item.id,lastmodifiedby:Home.loginUser,status:"Deleted"},function(responseText){
+	    			if(responseText!="success")
+	    			{
+	    				alert('An error occurred');
+	    			}
+	    		});
+			},
+			onReady : function(item) {
+			}
+			});
 		
 	});
 

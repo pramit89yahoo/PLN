@@ -32,22 +32,30 @@ public class Convert {
 	
 	@POST
 	@Path("saveConvert")
-	public String saveConvert(@FormParam("data") String data,@FormParam("convertArray") String convertArray,@DefaultValue("") @FormParam("whereObjData") String whereObjData)
+	public String saveConvert(@FormParam("data") String data,@FormParam("convertArray") String convertArray,
+			@DefaultValue("") @FormParam("whereObjData") String whereObjData,@DefaultValue("") @FormParam("missionaryId") String mid )
 	{
 		Root root = new Root();
 		try {
 			root.getConnection();
 			JSONObject convertdata = new JSONObject(Utils.makeSafe(data));
 			JSONObject responseOfSaveToTable = new JSONObject();
+			JSONObject responseOfSaveToCMTable = new JSONObject();
 			JSONArray jarray=new JSONArray(Utils.makeSafe(convertArray));
 			JSONObject json = new JSONObject();
+			JSONObject jsonCM = new JSONObject();
 			JSONObject outerwhereObj = new JSONObject();
+			String[] mArray={};
+			JSONObject convertMissionaryData=new JSONObject();
 			convertdata.put("cdate",Utils.formateStringDateToStringForMySql(convertdata.getString("cdate"),"dd-MMM-yyyy","yyyy-MM-dd"));
 			
 			if (whereObjData.length() > 2) {
 				outerwhereObj = new JSONObject(Utils.makeSafe(whereObjData));
 				json.put("where", outerwhereObj);
 			}
+			if(!mid.equalsIgnoreCase(""))
+				mArray=mid.split(",");
+			
 			for(int i=0;i<jarray.length();i++)
 			{
 				convertdata.put("cname", jarray.getJSONObject(i).optString("cname"));
@@ -55,6 +63,18 @@ public class Convert {
 				convertdata.put("cgender", jarray.getJSONObject(i).optString("cgender"));
 				json.put("data", convertdata);
 				responseOfSaveToTable = new JSONObject(CommonUtil.saveToTable("`convert`", json.toString(), root.con).toString());
+				System.out.println("responseOfSaveToTable >>"+responseOfSaveToTable);
+				for (int j=0;j < mArray.length;j++)
+				{
+					convertMissionaryData.put("cid", (responseOfSaveToTable.optJSONArray("idlist")).optInt(0));
+					convertMissionaryData.put("mid", mArray[j]);
+					convertMissionaryData.put("cmlastmodifiedby", convertdata.opt("clastmodifiedby"));
+					convertMissionaryData.put("cmlastodifiedtime", convertdata.opt("clastmodifiedtime"));
+					jsonCM.put("data", convertMissionaryData);
+					System.out.println("jsonCM.put(data) >>"+jsonCM);
+					responseOfSaveToCMTable = new JSONObject(CommonUtil.saveToTable("`convertmissionary`", jsonCM.toString(), root.con).toString());
+				}
+				
 			}
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -481,6 +501,29 @@ public class Convert {
 		catch(Exception ex)
 		{
 			ex.printStackTrace();
+		}
+		finally{
+        	root.closeConnection();
+        }
+		return response;
+	}
+	@POST
+	@Path("saveConvertMissionary")
+	public String saveConvertMissionary(@FormParam("cid") String cid,@FormParam("mid") int mid,@DefaultValue("active") @FormParam("status") String status,@FormParam("lastmodifiedby") int lastmodifiedby) throws Exception{
+		String response = "";
+		Root root = new Root();
+		try{
+			root.getConnection();
+			DbUtils dbutil = new DbUtils(root.con);
+			String sql= " insert into convertmissionary (cid,mid,cmlastmodifiedby,cmlastodifiedtime) values (?,?,?,now()) ON DUPLICATE KEY UPDATE"
+					+ " cmlastmodifiedby=?,status=?,cmlastodifiedtime=now()";
+			dbutil.executeUpdate(sql,cid,mid,lastmodifiedby,lastmodifiedby,status);
+			response="success";
+		}
+		catch(Exception ex)
+		{
+			ex.printStackTrace();
+			response="error";
 		}
 		finally{
         	root.closeConnection();

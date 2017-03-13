@@ -148,7 +148,7 @@ function SortableGrid(tableName, url, params, itemsPerPage, pagerName, positionI
         		if($.trim(gList.sort[sort]).length > 0){
         			var tempData = gList.sort[sort];
 	        		var text = $ths.eq(sort).html();
-	        		console.log(typeof tempData);
+//	        		console.log(typeof tempData);
 	        		if(typeof tempData == "string"){
 		        		if(this.orderby == gList.sort[sort]){
 		        			if(this.orderByType == "ASC"){
