@@ -69,7 +69,7 @@ public class Convert {
 					convertMissionaryData.put("cid", (responseOfSaveToTable.optJSONArray("idlist")).optInt(0));
 					convertMissionaryData.put("mid", mArray[j]);
 					convertMissionaryData.put("cmlastmodifiedby", convertdata.opt("clastmodifiedby"));
-					convertMissionaryData.put("cmlastodifiedtime", convertdata.opt("clastmodifiedtime"));
+					convertMissionaryData.put("cmlastmodifiedtime", convertdata.opt("clastmodifiedtime"));
 					jsonCM.put("data", convertMissionaryData);
 					System.out.println("jsonCM.put(data) >>"+jsonCM);
 					responseOfSaveToCMTable = new JSONObject(CommonUtil.saveToTable("`convertmissionary`", jsonCM.toString(), root.con).toString());
@@ -86,12 +86,12 @@ public class Convert {
 	}
 	@GET
 	@Path("exportToExcel")
-	public String exportToExcel(@DefaultValue("0")@QueryParam("excel") int excel,@Context HttpServletResponse httpResponse) throws JSONException {
+	public String exportToExcel(@DefaultValue("")@QueryParam("columns") String selcolumns,@Context HttpServletResponse httpResponse) throws JSONException {
 		String disposition = "attachment; fileName=Converts.xls";
 		httpResponse.setContentType("text/csv");
 		httpResponse.setHeader("Content-Disposition", disposition);
 		
-		String resp=loadGrid("{}");
+		String resp=loadGrid("{}",selcolumns);
 		CommonUtil obj = new CommonUtil();
 		obj.exportToExcel(new JSONObject(resp), httpResponse, "Converts", "Converts Data", "-");
 		
@@ -100,12 +100,14 @@ public class Convert {
 	
 	@POST
 	@Path("loadGrid")
-	public String loadGrid(@FormParam("data") String data) {
+	public String loadGrid(@FormParam("data") String data,@DefaultValue("")@FormParam("columns") String selColumns ) {
 		Root root = new Root();
 		JSONObject response = new JSONObject();
 		JSONArray jArray = new JSONArray();
 		String ConvertSearchCondition="";
 		try{
+			
+			
 			JSONObject jsonObject = new JSONObject();
 			if (data != null) {
 				jsonObject = null;
@@ -126,12 +128,38 @@ public class Convert {
 			}
 			root.getConnection();
 			DbUtils dUtil=new DbUtils(root.con);
-			ResultSet rs = dUtil.selectFromDatabase("SELECT SQL_CALC_FOUND_ROWS cid,cname,cage,cgender,CONCAT(m.`mfname`,',',m.`mlname`) AS Missionary,DATE_FORMAT(cdate,'%d-%b-%Y') as cdate,cward,cstake,cbaptism"
+			
+			String sql="SELECT SQL_CALC_FOUND_ROWS c.cid,cname,cage,cgender,GROUP_CONCAT(concat(m.`mfname`,' ',m.`mlname`)) AS Missionary,"
+					+ " DATE_FORMAT(cdate,'%d-%b-%Y') as cdate,cward,cstake,cbaptism"
 					+ " FROM `convert` c "
-					+ "LEFT JOIN `missionary` m ON m.`mid`=c.`mid` "
-					+ "WHERE c.`cstatus`=? "+ConvertSearchCondition
-					+ " order by "+orderby+" "+ordertype+" limit "+start+","+limit,"active");
-			int counts = dUtil.getIntFromDatabase("select count(*) from `convert` where cstatus=?", 0, "active");
+					+ " LEFT JOIN convertmissionary cm on cm.cid=c.cid AND cm.`status` ='active'"
+					+ " LEFT JOIN `missionary` m ON m.`mid`=cm.`mid` "
+					+ " WHERE c.`cstatus`=? "+ConvertSearchCondition
+					+ " group by c.cid"
+					+ " order by "+orderby+" "+ordertype+" limit "+start+","+limit;
+			//System.out.println(sql);
+			
+			ResultSet rs = dUtil.selectFromDatabase(sql,"active");
+			int counts = dUtil.getIntFromDatabase("select count(*) from `convert` c where c.cstatus=?"+ConvertSearchCondition, 0, "active");
+			
+			String[] headersArray=new String[] {"ID","Name","Age","Gender","Missionary","Date","Ward","Stake","Baptism","Action"};
+			String[] columnsArray=new String[]{"cid","cname","cage","cgender","missionary","cdate","cward","cstake","cbaptism",""};
+			if(selColumns.length()>0)
+			{
+				List<String> tempheaders = new ArrayList<String>();
+				List<String> tempcolumns = new ArrayList<String>();
+				String[] Columns=selColumns.split(",");
+				for(int i=0;i<Columns.length;i++){ 
+					tempheaders.add(headersArray[i].toString());
+					tempcolumns.add(columnsArray[i].toString());
+				}  
+				System.out.println(Columns.length);
+				headersArray = new String[tempheaders.size() ];
+				tempheaders.toArray( headersArray );
+				columnsArray = new String[tempcolumns.size() ];
+				tempcolumns.toArray( columnsArray );
+			}
+			System.out.println(selColumns+" and"+headersArray.length);
 			List<Object> sortKeys = new ArrayList<Object>();
 			sortKeys.add(new JSONObject().put("sortby", "cid").put("dataType", "numeric"));
 			sortKeys.add(new JSONObject().put("sortby", "cname").put("dataType", "string"));
@@ -144,8 +172,8 @@ public class Convert {
 			sortKeys.add(new JSONObject().put("sortby", "cbaptism").put("dataType", "numeric"));
 			jArray = CommonUtil.getJsonArrayFromResultSet(rs, "");
 			response.put("count",counts);
-			response.put("headers",new String[] {"ID","Name","Age","Gender","Missionary","Date","Ward","Stake","Baptism","Action"});
-			response.put("columns",new String[]{"cid","cname","cage","cgender","missionary","cdate","cward","cstake","cbaptism",""});
+			response.put("headers",headersArray);
+			response.put("columns",columnsArray);
 			response.put("data",jArray);
 			response.put("sort",sortKeys);
 			return response.toString();
@@ -193,8 +221,12 @@ public class Convert {
 		try{
 			root.getConnection();
 			DbUtils dbutil = new DbUtils(root.con);
-			String query="SELECT cid,cname,cage,cgender,c.mid,concat(m.mlname,',',m.mfname) as mname,DATE_FORMAT(cdate,'%d-%b-%Y') AS cdate,cward,cstake,cbaptism "
-					+ "FROM `convert` c LEFT JOIN `missionary` m ON m.`mid`=c.mid WHERE c.cid=?";
+			String query=" SELECT c.cid,cname,cage,cgender,GROUP_CONCAT(CONCAT(CONCAT(m.mlname,' ',m.mfname,'#-#'),cm.`mid`) SEPARATOR '$-$') as mname,"
+					+ " DATE_FORMAT(cdate,'%d-%b-%Y') AS cdate,cward,cstake,cbaptism "
+					+ " FROM `convert` c "
+					+ " LEFT JOIN convertmissionary cm on cm.cid=c.cid and cm.status='active'"
+					+ " LEFT JOIN `missionary` m ON m.`mid`=cm.mid "
+					+ " WHERE c.cid=?";
 			ResultSet rs=dbutil.selectFromDatabase(query, cid);
 			data=CommonUtil.getJsonObjectFromResultSet(rs, "");
 		}
@@ -263,9 +295,10 @@ public class Convert {
 			List<String> parametersList = new ArrayList<String>();
 			root.getConnection();
 			DbUtils dbutil = new DbUtils(root.con);
-			String sql= "SELECT MONTHNAME(cdate) as entity,COUNT(*) as cnt,MONTH(cdate),YEAR(cdate) as monthid FROM `convert` c "
-					+ "JOIN missionary m ON m.`mid`=c.`mid`"
-					+ " WHERE c.`cdate` BETWEEN ? AND ? AND c.`cstatus`='active' AND (m.`mdepartdate` IS NULL OR m.`mdepartdate` BETWEEN ? AND ?)";
+			String sql= "SELECT MONTHNAME(cdate) as entity,COUNT(*) as cnt,MONTH(cdate),YEAR(cdate) as monthid FROM `convert` c ";
+					sql += " left JOIN convertmissionary cm ON cm.cid=c.cid AND cm.`status` ='active' " 
+							+ "JOIN missionary m ON m.`mid`=cm.`mid`";
+					sql+= " WHERE c.`cdate` BETWEEN ? AND ? AND c.`cstatus`='active' AND (m.`mdepartdate` IS NULL OR m.`mdepartdate` BETWEEN ? AND ?)";
 			String startdate=Utils.formateStringDateToStringForMySql(jdata.getString("rstartdate"),"MM/dd/yyy","yyyy-MM-dd");
 			String enddate=Utils.formateStringDateToStringForMySql(jdata.getString("renddate"),"MM/dd/yyy","yyyy-MM-dd");
 			parametersList.add(startdate);
@@ -294,7 +327,7 @@ public class Convert {
 			}
 			if(!jdata.optString("rmissionary").equalsIgnoreCase("0"))
 			{
-				sql+=" and c.mid=? ";
+				sql+=" and cm.mid=? ";
 				parametersList.add(jdata.getString("rmissionary"));
 			}
 			sql+= "and c.cstatus='active' GROUP BY MONTH(cdate),MONTHNAME(cdate),YEAR(cdate) order by YEAR(cdate),MONTH(cdate)";
@@ -347,7 +380,8 @@ public class Convert {
 	private String generateGroupQueryResponse(DbUtils dbutil,JSONObject jdata,String Groupby){
 		String response="";
 		String sql = "SELECT "+Groupby+" AS entity,COUNT(*) as cnt FROM `convert` c ";
-		sql += "JOIN missionary m ON c.`mid`=m.`mid`";
+		sql += " LEFT JOIN convertmissionary cm ON cm.cid=c.cid AND cm.`status` ='active' ";
+		sql += " JOIN missionary m ON cm.`mid`=m.`mid`";
 		sql += "WHERE c.`cdate` BETWEEN ? AND ? AND c.`cstatus`='active' AND (m.`mdepartdate` IS NULL OR m.`mdepartdate` BETWEEN ? AND ?)";
 		try{
 			List<String> parametersList = new ArrayList<String>();
@@ -417,8 +451,9 @@ public class Convert {
 			List<String> parametersList = new ArrayList<String>();
 			root.getConnection();
 			DbUtils dbutil = new DbUtils(root.con);
-			String sql= "SELECT SQL_CALC_FOUND_ROWS cid,cname,cage,cgender,CONCAT(m.`mfname`,',',m.`mlname`) AS Missionary,DATE_FORMAT(cdate,'%d-%b-%Y') as cdate,cward,cstake,cbaptism,m.mtitle as title,m.mnationality as nationality FROM `convert` c "
-					+ "JOIN missionary m ON m.`mid`=c.`mid`"
+			String sql= "SELECT SQL_CALC_FOUND_ROWS c.cid,cname,cage,cgender,group_concat(CONCAT(m.`mfname`,' ',m.`mlname`)) AS Missionary,DATE_FORMAT(cdate,'%d-%b-%Y') as cdate,cward,cstake,cbaptism,m.mtitle as title,m.mnationality as nationality FROM `convert` c "
+					+ " LEFT JOIN `convertmissionary` cm  on cm.cid=c.cid and cm.status='active' "
+					+ " left JOIN missionary m ON m.`mid`=cm.`mid`"
 					+ " WHERE c.`cdate` BETWEEN ? AND ? AND c.`cstatus`='active' AND (m.`mdepartdate` IS NULL OR m.`mdepartdate` BETWEEN ? AND ?)";
 			String startdate=Utils.formateStringDateToStringForMySql(jdata.getString("rstartdate"),"MM/dd/yyy","yyyy-MM-dd");
 			String enddate=Utils.formateStringDateToStringForMySql(jdata.getString("renddate"),"MM/dd/yyy","yyyy-MM-dd");
@@ -448,11 +483,11 @@ public class Convert {
 			}
 			if(!jdata.optString("rmissionary").equalsIgnoreCase("0"))
 			{
-				sql+=" and c.mid=? ";
+				sql+=" and cm.mid=? ";
 				parametersList.add(jdata.getString("rmissionary"));
 			}
 			sql+= " and c.cstatus='active'";
-			sql+= " order by "+orderby+" "+ordertype;
+			sql+= " group by c.cid order by "+orderby+" "+ordertype;
 			sql+=" limit "+start +","+limit;
 			ResultSet rs=dbutil.selectFromDatabase(sql,parametersList.toArray());
 			int counts=dbutil.getTotalCount();
@@ -515,8 +550,8 @@ public class Convert {
 		try{
 			root.getConnection();
 			DbUtils dbutil = new DbUtils(root.con);
-			String sql= " insert into convertmissionary (cid,mid,cmlastmodifiedby,cmlastodifiedtime) values (?,?,?,now()) ON DUPLICATE KEY UPDATE"
-					+ " cmlastmodifiedby=?,status=?,cmlastodifiedtime=now()";
+			String sql= " insert into convertmissionary (cid,mid,cmlastmodifiedby,cmlastmodifiedtime) values (?,?,?,now()) ON DUPLICATE KEY UPDATE"
+					+ " cmlastmodifiedby=?,status=?,cmlastmodifiedtime=now()";
 			dbutil.executeUpdate(sql,cid,mid,lastmodifiedby,lastmodifiedby,status);
 			response="success";
 		}
