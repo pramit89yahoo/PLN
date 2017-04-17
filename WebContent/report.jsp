@@ -289,7 +289,7 @@ reportView.loadGrid=function(){
 	reqdata["rward"] = $("#rward").val() != null ? $("#rward").val().toString() : "";
 	reqdata["rstake"] = $("#rstake").val() != null ? $("#rstake").val().toString() : "";
 	var url = "${pageContext.request.contextPath}/rest/Convert/getDataReportConverts?m="+Math.random();
-	pagersss = new SortableGrid('reportGridDiv', url, reqdata, 10,'pagersss','reportGridPaginationDiv',true);
+	pagersss = new SortableGrid('reportGridDiv', url, reqdata, 1000,'pagersss','reportGridPaginationDiv',true);
 	pagersss.showPage(1);
 }
 reportGridPaginationDiv = function(data){
