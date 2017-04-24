@@ -450,8 +450,17 @@ public class Convert {
 			JSONObject jdata = new JSONObject(Utils.makeSafe(data));
 			List<String> parametersList = new ArrayList<String>();
 			root.getConnection();
+			String cidCondition=" c.cid ";
 			DbUtils dbutil = new DbUtils(root.con);
-			String sql= "SELECT SQL_CALC_FOUND_ROWS c.cid,cname,cage,cgender,group_concat(CONCAT(m.`mfname`,' ',m.`mlname`)) AS Missionary,DATE_FORMAT(cdate,'%d-%b-%Y') as cdate,cward,cstake,cbaptism,m.mtitle as title,m.mnationality as nationality FROM `convert` c "
+			if(!jdata.optString("rstake").equalsIgnoreCase("") || !jdata.optString("rward").equalsIgnoreCase("") || 
+					(jdata.optString("rward").equalsIgnoreCase("") &  jdata.optString("rstake").equalsIgnoreCase("") & jdata.optString("rtitle").equalsIgnoreCase("") &
+							jdata.optString("rmissionary").equalsIgnoreCase("0") & jdata.optString("rnationality").equalsIgnoreCase("")) )
+			{
+				cidCondition=" distinct(c.cid) " ;
+			}
+			String sql= "SELECT SQL_CALC_FOUND_ROWS "+cidCondition+",cname,cage,cgender,group_concat(CONCAT(m.`mfname`,' ',m.`mlname`)) AS Missionary,"
+					+ "DATE_FORMAT(cdate,'%d-%b-%Y') as cdate,cward,cstake,cbaptism,m.mtitle as title,m.mnationality as nationality "
+					+ "FROM `convert` c "
 					+ " LEFT JOIN `convertmissionary` cm  on cm.cid=c.cid and cm.status='active' "
 					+ " left JOIN missionary m ON m.`mid`=cm.`mid`"
 					+ " WHERE c.`cdate` BETWEEN ? AND ? AND c.`cstatus`='active' AND (m.`mdepartdate` IS NULL OR m.`mdepartdate` BETWEEN ? AND ?)";
