@@ -13,15 +13,34 @@
 				<button type="button" onclick="Convert.loadGrid();" class="btn btn-primary" style="margin-right: 5px;">
 			            	<i class="fa fa-search"></i> Search  	</button>
 			</div>
-			<button class="btn btn-success  pull-right" onclick="Convert.addConvert();" style="margin-right: 5px;">Add Converts</button>
-			<button class="btn btn-info  pull-right" onclick="Convert.exportToExcel();" style="margin-right: 5px;">Export to Excel</button>
+
+			<div class="dropdown">
+				<button class="btn btn-info  pull-right" onclick="Convert.exportToExcel();" style="margin-right: 5px;">Export to Excel</button>
+				<button class="btn btn-default dropdown-toggle pull-right" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+					Select Columns <span class="caret"></span>
+				</button>
+				<ul id="columns" class="dropdown-menu pull-right" aria-labelledby="dropdownMenu1">
+					<li><a href="#"><input id="chk0" type="checkbox"> ID</input></a></li>
+					<li><a href="#"><input id="chk1" type="checkbox"> Name</input></a></li>
+					<li><a href="#"><input id="chk2" type="checkbox"> Age</input></a></li>
+					<li><a href="#"><input id="chk3" type="checkbox"> Gender</input></a></li>
+					<li><a href="#"><input id="chk4" type="checkbox"> Missionary</input></a></li>
+					<li><a href="#"><input id="chk5" type="checkbox"> Date</input></a></li>
+					<li><a href="#"><input id="chk6" type="checkbox"> Ward</input></a></li>
+					<li><a href="#"><input id="chk7" type="checkbox"> Stake</input></a></li>
+					<li><a href="#"><input id="chk8" type="checkbox"> Baptism</input></a></li>
+				</ul>
+
+				<button class="btn btn-success  pull-right" onclick="Convert.addConvert();" style="margin-right: 5px;">Add Converts</button>
+			</div>
+
 		</div>
 		<div class="TaskRow">
             <div class="col-sm-12 paddingTop" id='convertGridDiv'> </div>
             <div class="col-sm-12" id='convertGridPaginationDiv'> </div>
 		</div>
 	</div>
-	
+
 </section>
 <script>
 Convert=function(){};
@@ -76,8 +95,9 @@ Convert.loadGrid=function(){
 convertGridPaginationDiv = function(data){
 	$('.convertContent thead .th0').css("width","5%");
 	$('.convertContent thead .th1').css("width","12%");
-	$('.convertContent thead .th2').css("width","12%");
-	$('.convertContent thead .th3').css("width","12%");
+	$('.convertContent thead .th2').css("width","6%");
+	$('.convertContent thead .th3').css("width","8%");
+	$('.convertContent thead .th4').css("width","25%");
 	$('.convertContent thead .th9').css("width","10%");
  	$('.td9').each(function(){
  		var id=$(this).parent('tr').children('.td0').text();
@@ -154,13 +174,22 @@ Convert.deleteConvert=function(cid){
     	 cssClass: "DeleteConvert"      	
  	});
 }
+
 Convert.exportToExcel=function(){
-	window.location.href="${pageContext.request.contextPath}/rest/Convert/exportToExcel";
+	Convert.selecttedColumns=[];
+	$( "#columns li" ).each(function( index ) {
+		if($('#chk' + index).is(":checked"))
+		{ 
+			Convert.selecttedColumns.push(index);
+		};
+	});
+	window.location.href="${pageContext.request.contextPath}/rest/Convert/exportToExcel?columns="+Convert.selecttedColumns.toString();
 };
 
 
 $(document).ready(function(){
 	Convert.loadGrid();	
+	Convert.notselecttedColumns=[];
 	$("#cConvertSearch").autocomplete({
         source: "${pageContext.request.contextPath}/rest/Convert/getConvertByName?limit=10&m="+Math.random(),
         minLength: 2,

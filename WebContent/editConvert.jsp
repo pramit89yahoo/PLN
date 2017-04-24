@@ -40,6 +40,8 @@
 					<label class="col-md-4 control-label">Missionary *</label>
 					<div class="col-md-8">
 						<input id="cmissionary" type="text" class="form-control requiredfield" placeholder="Missionary Name"> </input>
+					
+					<i>**This will save missionary as soon as you make changes. </i>
 					</div>
 				</div>
 				<div class="form-group">
@@ -84,12 +86,19 @@
         	$("#cname").val(resp["cname"]);
         	$("#cage").val(resp["cage"]);
         	$("#cgender").val(resp["cgender"]);
-        	$("#cmissionary").val(resp["mname"]);
+//        	$("#cmissionary").val(resp["mname"]);
         	$("#cdate").val(resp["cdate"]);
         	$("#cward").val(resp["cward"]);
         	$("#cstake").val(resp["cstake"]);
         	$("#cbaptism").val(resp["cbaptism"]);
         	editConvert.cmid=resp["mid"];
+        	if(resp["mname"].length > 0){
+	        	var ms=resp["mname"].split('$-$');
+	        	$.each(ms,function(i){
+	        		msd=ms[i].split('#-#')
+					$("#cmissionary").tokenInput("add", {id: msd[1], label: msd[0]});
+				});
+        	}
 		});
 	}
 	editConvert.saveData=function(dialog){

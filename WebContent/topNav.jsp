@@ -15,7 +15,7 @@
 <link href="${pageContext.request.contextPath}/ui/css/sortablecustomgrid.css" rel="stylesheet" type="text/css" />
 <link href="${pageContext.request.contextPath}/ui/jQuery/jquery-ui.css" rel="stylesheet" type="text/css" />		
 <link href="${pageContext.request.contextPath}/ui/css/token-input-facebook.css"	rel='stylesheet' />	
-	
+<link href="${pageContext.request.contextPath}/ui/css/bootstrap-multiselect.css" rel='stylesheet' />
 
 <script	src="${pageContext.request.contextPath}/ui/jQuery/jquery-2.2.3.min.js"></script>
 <script	src="${pageContext.request.contextPath}/ui/bootstrap/js/bootstrap.min.js"></script>
@@ -32,3 +32,4 @@
 <script src="${pageContext.request.contextPath}/ui/jQuery/jquery-ui.min.js"	type="text/javascript"></script>
 <script src="${pageContext.request.contextPath}/ui/js/utils.js"	type="text/javascript"></script>
 <script src="${pageContext.request.contextPath}/ui/js/jquery.tokeninput.js" type="text/javascript"></script>
+<script	src="${pageContext.request.contextPath}/ui/js/bootstrap-multiselect.js"	type="text/javascript"></script>	
